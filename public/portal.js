@@ -8,7 +8,7 @@ async function api(path,method='GET',body){
   if(csrf && !['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;
   const response=await fetch('/api'+path,{method,credentials:'same-origin',headers,body:body===undefined?undefined:JSON.stringify(body)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+  if(!response.ok){const error=new Error(data.error||`Request failed (${response.status})`);error.field=data.field;throw error;}
   return data;
 }
 function showPortal(username){
@@ -72,10 +72,12 @@ $('#otpForm').addEventListener('submit',async event=>{
   catch(error){notice(error.message)}
 });
 $('#addForm').addEventListener('submit',async event=>{
-  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
+  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);const errorBox=$('#addError');
+  errorBox.textContent='';
   try{await api('/accounts','POST',{id:form.get('id'),name:form.get('name'),timezone:form.get('timezone')});notice('Account added. Open the login browser to authenticate ChatGPT.');element.reset();await loadAccounts()}
-  catch(error){notice(error.message)}
+  catch(error){errorBox.textContent=error.message;if(error.field)element.elements.namedItem(error.field)?.focus()}
 });
+$('#addForm').addEventListener('input',()=>{$('#addError').textContent=''});
 $('#passwordForm').addEventListener('submit',async event=>{
   event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
   try{await api('/auth/password','POST',{currentPassword:form.get('currentPassword'),newPassword:form.get('newPassword')});element.reset();showLogin();notice('Password changed. Sign in again with Telegram OTP.')}

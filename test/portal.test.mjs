@@ -59,8 +59,17 @@ test('portal login requires password and Telegram OTP; account CRUD requires ses
     assert.match(verified.headers.get('set-cookie'),/SameSite=Strict/);
     const {csrf}=await verified.json();
     assert.equal((await request('/accounts','POST',{id:'account-001',name:'A'},cookie)).status,403);
+    const invalidId=await request('/accounts','POST',{id:'bad-id',name:'Account 1',timezone:'UTC'},cookie,csrf);
+    assert.equal(invalidId.status,400);
+    assert.equal((await invalidId.json()).field,'id');
+    const invalidZone=await request('/accounts','POST',{id:'account-001',name:'Account 1',timezone:'Bad/Zone'},cookie,csrf);
+    assert.equal(invalidZone.status,400);
+    assert.equal((await invalidZone.json()).field,'timezone');
     const created=await request('/accounts','POST',{id:'account-001',name:'Account 1',timezone:'Asia/Kolkata'},cookie,csrf);
     assert.equal(created.status,201);
+    const duplicate=await request('/accounts','POST',{id:'account-001',name:'Account 1',timezone:'Asia/Kolkata'},cookie,csrf);
+    assert.equal(duplicate.status,409);
+    assert.equal((await duplicate.json()).field,'id');
     assert.equal(db.account('account-001').name,'Account 1');
     assert.equal((await request('/accounts/account-001','PATCH',{name:'Updated',timezone:'UTC'},cookie,csrf)).status,200);
     assert.equal(db.account('account-001').name,'Updated');

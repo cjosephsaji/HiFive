@@ -89,11 +89,14 @@ export function createServer(db:AppDatabase,worker:AccountWorker,browser:Browser
   app.get("/api/accounts",(_req,res)=>res.json(db.accounts().map(publicAccount)));
   app.post("/api/accounts",(req,res)=>{
     const {id,name,timezone="Asia/Kolkata"}=req.body??{};
-    if(!validId(id)||!validName(name)||!validZone(timezone)) {res.status(400).json({error:"Invalid account"});return;}
+    if(!validId(id)){res.status(400).json({field:"id",error:"Account ID must start with account- and contain 1–40 lowercase letters, numbers, or hyphens."});return;}
+    if(!validName(name)){res.status(400).json({field:"name",error:"Display name must contain 1–100 characters."});return;}
+    if(!validZone(timezone)){res.status(400).json({field:"timezone",error:"Enter a valid timezone, such as Asia/Kolkata or UTC."});return;}
     const profilePath=resolve(config.profileRoot,id);
     if(!profilePath.startsWith(resolve(config.profileRoot)+sep)) {res.status(400).json({error:"Invalid account ID"});return;}
+    if(db.account(id)){res.status(409).json({field:"id",error:"That account ID already exists."});return;}
     try {db.addAccount({id,name:name.trim(),profilePath,timezone,enabled:false});res.status(201).json(publicAccount(db.account(id)!));}
-    catch {res.status(409).json({error:"Account already exists"});}
+    catch (error) {console.error("Account creation failed",error);res.status(500).json({error:"Could not create account. Check the application logs."});}
   });
   app.patch("/api/accounts/:id",(req,res)=>{
     const account=db.account(req.params.id);
