@@ -62,23 +62,23 @@ function renderAccount(a){
 }
 
 $('#loginForm').addEventListener('submit',async event=>{
-  event.preventDefault();const form=new FormData(event.currentTarget);
-  try{const result=await api('/auth/login','POST',{username:form.get('username'),password:form.get('password')});event.currentTarget.reset();challengeId=result.challengeId;$('#otpForm').hidden=false;notice('Code sent to your private Telegram chat. It expires in 5 minutes.');}
+  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
+  try{const result=await api('/auth/login','POST',{username:form.get('username'),password:form.get('password')});element.reset();challengeId=result.challengeId;$('#otpForm').hidden=false;notice('Code sent to your private Telegram chat. It expires in 5 minutes.');}
   catch(error){notice(error.message)}
 });
 $('#otpForm').addEventListener('submit',async event=>{
-  event.preventDefault();const form=new FormData(event.currentTarget);
-  try{const result=await api('/auth/verify','POST',{challengeId,code:form.get('code')});csrf=result.csrf;event.currentTarget.reset();$('#loginForm').reset();showPortal(result.username)}
+  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
+  try{const result=await api('/auth/verify','POST',{challengeId,code:form.get('code')});csrf=result.csrf;element.reset();$('#loginForm').reset();showPortal(result.username)}
   catch(error){notice(error.message)}
 });
 $('#addForm').addEventListener('submit',async event=>{
-  event.preventDefault();const form=new FormData(event.currentTarget);
-  try{await api('/accounts','POST',{id:form.get('id'),name:form.get('name'),timezone:form.get('timezone')});notice('Account added. Open the login browser to authenticate ChatGPT.');event.currentTarget.reset();await loadAccounts()}
+  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
+  try{await api('/accounts','POST',{id:form.get('id'),name:form.get('name'),timezone:form.get('timezone')});notice('Account added. Open the login browser to authenticate ChatGPT.');element.reset();await loadAccounts()}
   catch(error){notice(error.message)}
 });
 $('#passwordForm').addEventListener('submit',async event=>{
-  event.preventDefault();const form=new FormData(event.currentTarget);
-  try{await api('/auth/password','POST',{currentPassword:form.get('currentPassword'),newPassword:form.get('newPassword')});event.currentTarget.reset();showLogin();notice('Password changed. Sign in again with Telegram OTP.')}
+  event.preventDefault();const element=event.currentTarget;const form=new FormData(element);
+  try{await api('/auth/password','POST',{currentPassword:form.get('currentPassword'),newPassword:form.get('newPassword')});element.reset();showLogin();notice('Password changed. Sign in again with Telegram OTP.')}
   catch(error){notice(error.message)}
 });
 $('#refresh').addEventListener('click',()=>void loadAccounts());
