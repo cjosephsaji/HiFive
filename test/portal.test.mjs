@@ -43,6 +43,17 @@ test('portal login requires password and Telegram OTP; account CRUD requires ses
     assert.equal((await request('/auth/verify','POST',{challengeId,code:'000000'})).status,401);
     const verified=await request('/auth/verify','POST',{challengeId,code});
     assert.equal(verified.status,200);
+    db.raw.prepare('INSERT INTO portal_otp_sends(user_id,sent_at) VALUES((SELECT id FROM portal_users WHERE username=?),?)')
+      .run('admin',new Date().toISOString());
+    db.raw.prepare('INSERT INTO portal_otp_sends(user_id,sent_at) VALUES((SELECT id FROM portal_users WHERE username=?),?)')
+      .run('admin',new Date().toISOString());
+    const limited=await request('/auth/login','POST',{username:'admin',password:'a-strong-password-123'});
+    assert.equal(limited.status,429);
+    assert.match((await limited.json()).error,/Too many login codes requested/);
+    assert.ok(Number(limited.headers.get('retry-after'))>0);
+    const wrong=await request('/auth/login','POST',{username:'admin',password:'wrong'});
+    assert.equal(wrong.status,401);
+    assert.equal((await wrong.json()).error,'Invalid credentials or login unavailable');
     const cookie=verified.headers.get('set-cookie').split(';')[0];
     assert.match(verified.headers.get('set-cookie'),/HttpOnly/);
     assert.match(verified.headers.get('set-cookie'),/SameSite=Strict/);

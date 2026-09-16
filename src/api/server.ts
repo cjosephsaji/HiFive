@@ -40,9 +40,16 @@ export function createServer(db:AppDatabase,worker:AccountWorker,browser:Browser
   app.post("/api/auth/login",async(req,res)=>{
     const {username,password}=req.body??{};
     if(typeof username!=="string"||typeof password!=="string"||username.length>100||password.length>256){res.status(401).json({error:"Invalid credentials or login unavailable"});return;}
-    const challengeId=await auth.begin(username,password,req.ip??"unknown");
-    if(!challengeId){res.status(401).json({error:"Invalid credentials or login unavailable"});return;}
-    res.json({challengeId});
+    const result=await auth.begin(username,password,req.ip??"unknown");
+    if(result.kind==="invalid"){res.status(401).json({error:"Invalid credentials or login unavailable"});return;}
+    if(result.kind==="rate_limited"){
+      res.setHeader("Retry-After",String(result.retryAfterSeconds));
+      res.status(429).json({error:`Too many login codes requested. Try again in ${Math.ceil(result.retryAfterSeconds/60)} minute(s).`});return;
+    }
+    if(result.kind==="delivery_failed"){
+      res.status(503).json({error:"Telegram could not deliver the login code. Check the configured bot and private chat, then try again."});return;
+    }
+    res.json({challengeId:result.challengeId});
   });
   app.post("/api/auth/verify",(req,res)=>{
     const {challengeId,code}=req.body??{};

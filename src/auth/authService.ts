@@ -6,6 +6,11 @@ interface UserRow { id:string;username:string;password_salt:string;password_hash
 interface ChallengeRow { id:string;user_id:string;code_hash:string;expires_at:string;attempts:number }
 interface SessionRow { user_id:string;username:string;csrf_token:string;expires_at:string }
 const SESSION_MS=12*60*60_000;
+type LoginStartResult=
+  | {kind:"ok";challengeId:string}
+  | {kind:"invalid"}
+  | {kind:"rate_limited";retryAfterSeconds:number}
+  | {kind:"delivery_failed"};
 
 export class AuthService {
   constructor(private readonly db:AppDatabase,private readonly telegram:TelegramService,
@@ -28,7 +33,7 @@ export class AuthService {
         .run(randomUUID(),username,salt,hash,this.chatId,new Date().toISOString());
     })();
   }
-  async begin(username:string,password:string,ip:string):Promise<string|null> {
+  async begin(username:string,password:string,ip:string):Promise<LoginStartResult> {
     const normalized=username.trim().slice(0,100);
     const keys=[`account:${digest(normalized.toLowerCase())}`,`ip:${digest(ip)}`];
     this.db.raw.prepare("DELETE FROM portal_challenges WHERE expires_at<?").run(new Date().toISOString());
@@ -36,7 +41,7 @@ export class AuthService {
     this.db.raw.prepare("DELETE FROM portal_otp_sends WHERE sent_at<?").run(new Date(Date.now()-60*60_000).toISOString());
     for(const key of keys) {
       const blocked=this.db.raw.prepare("SELECT blocked_until FROM portal_login_attempts WHERE key=?").get(key) as {blocked_until:string|null}|undefined;
-      if(blocked?.blocked_until && Date.parse(blocked.blocked_until)>Date.now())return null;
+      if(blocked?.blocked_until && Date.parse(blocked.blocked_until)>Date.now())return {kind:"invalid"};
     }
     const user=this.db.raw.prepare("SELECT * FROM portal_users WHERE username=?").get(normalized) as UserRow|undefined;
     const calculated=await passwordHash(password,user?.password_salt??"unknown-user-salt");
@@ -50,15 +55,19 @@ export class AuthService {
           ON CONFLICT(key) DO UPDATE SET failures=excluded.failures,blocked_until=excluded.blocked_until`)
           .run(key,failures,wait?new Date(Date.now()+wait).toISOString():null);
       }
-      return null;
+      return {kind:"invalid"};
     }
     for(const key of keys)this.db.raw.prepare("DELETE FROM portal_login_attempts WHERE key=?").run(key);
-    const sends=this.db.raw.prepare("SELECT count(*) AS n,max(sent_at) AS latest FROM portal_otp_sends WHERE user_id=? AND sent_at>?")
-      .get(user!.id,new Date(Date.now()-60*60_000).toISOString()) as {n:number;latest:string|null};
-    if(sends.n>=3||(sends.latest&&Date.now()-Date.parse(sends.latest)<60_000))return null;
+    const sends=this.db.raw.prepare("SELECT count(*) AS n,min(sent_at) AS earliest,max(sent_at) AS latest FROM portal_otp_sends WHERE user_id=? AND sent_at>?")
+      .get(user!.id,new Date(Date.now()-60*60_000).toISOString()) as {n:number;earliest:string|null;latest:string|null};
+    if(sends.n>=3 && sends.earliest)
+      return {kind:"rate_limited",retryAfterSeconds:Math.max(1,Math.ceil((Date.parse(sends.earliest)+60*60_000-Date.now())/1000))};
+    if(sends.latest && Date.now()-Date.parse(sends.latest)<60_000)
+      return {kind:"rate_limited",retryAfterSeconds:Math.max(1,Math.ceil((Date.parse(sends.latest)+60_000-Date.now())/1000))};
     const latest=this.db.raw.prepare("SELECT created_at FROM portal_challenges WHERE user_id=? ORDER BY created_at DESC LIMIT 1")
       .get(user!.id) as {created_at:string}|undefined;
-    if(latest && Date.now()-Date.parse(latest.created_at)<60_000)return null;
+    if(latest && Date.now()-Date.parse(latest.created_at)<60_000)
+      return {kind:"rate_limited",retryAfterSeconds:Math.max(1,Math.ceil((Date.parse(latest.created_at)+60_000-Date.now())/1000))};
     const id=randomUUID();const code=randomInt(0,1_000_000).toString().padStart(6,"0");
     const now=new Date();
     this.db.raw.transaction(()=>{
@@ -70,8 +79,8 @@ export class AuthService {
       await this.telegram.sendTo(this.chatId,`Portal login code: ${code}\nExpires in 5 minutes. If you did not request this, change your portal password.`);
       this.db.raw.prepare("INSERT INTO portal_otp_sends(user_id,sent_at) VALUES(?,?)").run(user!.id,new Date().toISOString());
     }
-    catch {this.db.raw.prepare("DELETE FROM portal_challenges WHERE id=?").run(id);return null;}
-    return id;
+    catch {this.db.raw.prepare("DELETE FROM portal_challenges WHERE id=?").run(id);return {kind:"delivery_failed"};}
+    return {kind:"ok",challengeId:id};
   }
   verify(challengeId:string,code:string):{token:string;csrf:string;username:string}|null {
     if(!/^[0-9]{6}$/.test(code)||!isUuid(challengeId))return null;
