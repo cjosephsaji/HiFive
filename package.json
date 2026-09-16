@@ -1,0 +1,28 @@
+{
+  "name": "hifive",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "start": "node dist/index.js",
+    "diagnose": "node dist/diagnose.js",
+    "setup-admin": "node dist/setupAdmin.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "dotenv": "^17.2.2",
+    "luxon": "^3.7.2",
+    "playwright": "1.63.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^24.5.2",
+    "@types/express": "^5.0.3",
+    "typescript": "^5.9.2"
+  },
+  "engines": { "node": ">=22" }
+}

@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/database/app.sqlite
+      PROFILE_ROOT: /data/profiles
+      SCREENSHOT_ROOT: /data/screenshots
+      DISPLAY: :99
+    volumes:
+      - ./data/profiles:/data/profiles
+      - ./data/database:/data/database
+      - ./data/logs:/data/logs
+      - ./data/screenshots:/data/screenshots
+    ports:
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:6080:6080"

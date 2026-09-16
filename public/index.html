@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HiFive</title>
+  <link rel="stylesheet" href="/assets/portal.css">
+  <script defer src="/assets/portal.js"></script>
+</head>
+<body>
+  <main>
+    <header><div><p class="eyebrow">SERVER PORTAL</p><h1>HiFive</h1></div><button id="logout" class="secondary" hidden>Log out</button></header>
+    <p id="notice" role="status"></p>
+    <section id="loginPanel" class="panel">
+      <h2>Admin sign in</h2>
+      <p>Enter your portal password. A one-time code will be sent to your private Telegram chat.</p>
+      <form id="loginForm"><label>Username<input name="username" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button>Send Telegram code</button></form>
+      <form id="otpForm" hidden><label>Telegram code<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label><button>Verify and sign in</button></form>
+    </section>
+    <div id="portal" hidden>
+      <section class="panel"><div class="row"><div><h2>Accounts</h2><p>Each account keeps its own saved Chromium profile on the server.</p></div><button id="refresh" class="secondary">Refresh</button></div><div id="accounts"></div></section>
+      <section class="panel"><h2>Add account</h2><form id="addForm" class="grid"><label>Account ID<input name="id" placeholder="account-001" pattern="account-[a-z0-9-]+" required></label><label>Display name<input name="name" placeholder="Account 1" required></label><label>Timezone<input name="timezone" value="Asia/Kolkata" required></label><button>Add account</button></form></section>
+      <section class="panel"><h2>Change portal password</h2><form id="passwordForm" class="grid"><label>Current password<input name="currentPassword" type="password" autocomplete="current-password" required></label><label>New password<input name="newPassword" type="password" minlength="16" autocomplete="new-password" required></label><button>Change password</button></form></section>
+    </div>
+  </main>
+</body>
+</html>
