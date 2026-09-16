@@ -33,4 +33,4 @@ This command reads Usage, checks Work and composer detection, and saves a screen
 
 The portal requires a password and a six-digit Telegram code. Codes expire after five minutes and five verification attempts. Requests are limited to one per minute and three per hour. **Change portal password** invalidates existing sessions. The first administrator is created from the server terminal with `docker compose exec app npm run setup-admin`.
 
-If the bot cannot send codes, check `TELEGRAM_BOT_TOKEN` and the private `TELEGRAM_CHAT_ID` in `.env`, then recreate the container after changes. Do not expose these settings in logs or support requests.
+If the bot cannot send codes, check `TELEGRAM_BOT_TOKEN` and the private `TELEGRAM_OTP_CHAT_ID` in `.env`, then recreate the container after changes. `TELEGRAM_CHAT_ID` may point to a separate alert group. Do not expose these settings in logs or support requests.

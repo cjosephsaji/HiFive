@@ -13,7 +13,7 @@ const config=loadConfig();
 const db=new AppDatabase(config.databasePath);
 db.recoverInterruptedTriggers();
 const telegram=new TelegramService(config.telegram);
-const auth=new AuthService(db,telegram,config.portalSecret,config.telegram.chatId);
+const auth=new AuthService(db,telegram,config.portalSecret,config.telegram.otpChatId);
 const notifications=new NotificationService(db,telegram,config.telegram);
 const commands=new CommandService(db,telegram);
 const browser=new BrowserManager(config.screenshotRoot);

@@ -26,7 +26,8 @@ export class TelegramService {
     await this.sendTo(this.config.chatId,text);
   }
   async sendTo(chatId:string,text:string):Promise<void> {
-    if (!this.config.enabled || chatId!==this.config.chatId) throw new Error("Telegram destination unavailable");
+    if (!this.config.enabled || (chatId!==this.config.chatId && chatId!==this.config.otpChatId))
+      throw new Error("Telegram destination unavailable");
     await this.call("sendMessage", { chat_id: chatId, text: text.slice(0, 4096), disable_web_page_preview: true }, 15_000);
   }
   async updates(offset: number, signal?: AbortSignal): Promise<TelegramUpdate[]> {

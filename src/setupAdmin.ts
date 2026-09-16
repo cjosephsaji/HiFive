@@ -7,7 +7,7 @@ import { AuthService } from "./auth/authService.js";
 if(!process.stdin.isTTY)throw new Error("Run setup-admin in an interactive terminal");
 const config=loadConfig();
 const db=new AppDatabase(config.databasePath);
-const auth=new AuthService(db,new TelegramService(config.telegram),config.portalSecret,config.telegram.chatId);
+const auth=new AuthService(db,new TelegramService(config.telegram),config.portalSecret,config.telegram.otpChatId);
 const username=await new Promise<string>(resolve=>{
   const rl=createInterface({input:process.stdin,output:process.stdout});
   rl.question("Admin username: ",answer=>{rl.close();resolve(answer.trim())});

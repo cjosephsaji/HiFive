@@ -15,7 +15,7 @@ Node.js, TypeScript, Playwright, Chromium, SQLite, an authenticated web portal, 
 
 ## Quick deployment outline
 
-1. Create a Telegram bot and start a **private** chat with it. Copy `.env.example` to `.env`; set `TELEGRAM_BOT_TOKEN` and your private, positive numeric `TELEGRAM_CHAT_ID`. Set `PORTAL_SECRET` to a random secret such as the output of `openssl rand -hex 32`. Portal sign-in requires Telegram OTP. Commands additionally require `TELEGRAM_COMMANDS_ENABLED=true`.
+1. Create a Telegram bot and start a **private** chat with it. Copy `.env.example` to `.env`; set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` for alerts, and your private, positive numeric `TELEGRAM_OTP_CHAT_ID` for portal login codes. Alerts may go to a group; login codes must go to the private chat. Set `PORTAL_SECRET` to a random secret such as the output of `openssl rand -hex 32`. Commands additionally require `TELEGRAM_COMMANDS_ENABLED=true`.
 2. Run `docker compose up -d --build` on a Linux VPS, then `docker compose exec app npm run setup-admin`. Enter an admin username and a password of at least 16 characters in the interactive terminal. The password is stored only as a salted scrypt hash. The setup command works only once.
 3. The portal and noVNC bind to localhost on ports 3000 and 6080. For access over SSH, set `SESSION_COOKIE_SECURE=false` in `.env` and recreate the container with `docker compose up -d --force-recreate`, then use `ssh -L 3000:localhost:3000 -L 6080:localhost:6080 user@server`. Open `http://localhost:3000` and `http://localhost:6080/vnc.html`. For public access, put the portal behind an HTTPS reverse proxy and leave `SESSION_COOKIE_SECURE=true`. **Never expose port 6080 publicly**; its VNC service has no password and must stay behind the SSH tunnel.
 4. Sign in to the portal with the admin password, then enter the six-digit code sent to Telegram. Add `account-001`, open its login browser, and log in to ChatGPT manually through noVNC. Close the login browser from the portal when finished. The Chromium profile persists in `data/profiles/account-001/` across container restarts; ChatGPT passwords are not saved in SQLite.
@@ -38,7 +38,7 @@ Optional commands:
 - `/check account-001` — queue an immediate Usage check; it never directly sends `HI`
 - `/logs account-001` — ten recent sanitized event records
 
-Commands are accepted only from `TELEGRAM_CHAT_ID`. Portal OTP requires a private chat. No command bypasses the reset or idempotency checks. The bot does not return cookies, credentials, environment values, browser profiles, or raw Chromium diagnostics.
+Commands are accepted only from `TELEGRAM_CHAT_ID`. In a group, set `TELEGRAM_ADMIN_USER_ID` to the administrator's numeric user ID. Portal OTP uses `TELEGRAM_OTP_CHAT_ID` and requires a private chat. No command bypasses the reset or idempotency checks. The bot does not return cookies, credentials, environment values, browser profiles, or raw Chromium diagnostics.
 
 The application calls `NotificationService`, which owns deduplication and formatting. `TelegramService` is only the delivery adapter; another provider can be added without changing the scheduler.
 

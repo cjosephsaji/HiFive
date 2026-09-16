@@ -12,10 +12,12 @@ test('portal login requires password and Telegram OTP; account CRUD requires ses
   const dir=mkdtempSync(join(tmpdir(),'chatgpt-portal-'));
   const db=new AppDatabase(join(dir,'app.sqlite'));
   const sent=[];
-  const telegramConfig={enabled:true,botToken:'fake',chatId:'123',errorReminderHours:12,commandsEnabled:false,adminUserId:null};
+  const telegramConfig={enabled:true,botToken:'fake',chatId:'-5480931746',otpChatId:'123',errorReminderHours:12,commandsEnabled:false,adminUserId:'1813708429'};
   const telegram=new TelegramService(telegramConfig,async(_url,init)=>{
     sent.push(JSON.parse(init.body));return new Response(JSON.stringify({ok:true,result:{message_id:1}}),{status:200});
   });
+  assert.throws(()=>new AuthService(db,telegram,'replace-with-64-random-hex-characters','123'),/random secret/);
+  assert.throws(()=>new AuthService(db,telegram,'a'.repeat(64),'-5480931746'),/private TELEGRAM_OTP_CHAT_ID/);
   const auth=new AuthService(db,telegram,'a'.repeat(64),'123');
   await auth.createFirstAdmin('admin','a-strong-password-123');
   const config={telegram:telegramConfig,databasePath:join(dir,'app.sqlite'),profileRoot:join(dir,'profiles'),screenshotRoot:join(dir,'screenshots'),resetSafetySeconds:90,portalSecret:'a'.repeat(64),secureCookies:false,port:0};
@@ -34,6 +36,9 @@ test('portal login requires password and Telegram OTP; account CRUD requires ses
     assert.equal(started.status,200);
     const {challengeId}=await started.json();
     assert.equal(sent.length,1);
+    assert.equal(sent[0].chat_id,'123');
+    await telegram.send('test alert');
+    assert.equal(sent[1].chat_id,'-5480931746');
     const code=/Portal login code: (\d{6})/.exec(sent[0].text)[1];
     assert.equal((await request('/auth/verify','POST',{challengeId,code:'000000'})).status,401);
     const verified=await request('/auth/verify','POST',{challengeId,code});

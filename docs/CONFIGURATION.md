@@ -6,11 +6,12 @@ Copy `.env.example` to `.env`. Keep the populated file private and out of Git.
 | --- | --- | --- |
 | `TELEGRAM_ENABLED` | Enables Telegram delivery and portal OTP | `true` in example |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot API credential | Required |
-| `TELEGRAM_CHAT_ID` | Private administrator chat receiving OTP and alerts | Required |
+| `TELEGRAM_CHAT_ID` | Destination for account alerts; may be a group | Required |
+| `TELEGRAM_OTP_CHAT_ID` | Private chat receiving portal login codes | Defaults to `TELEGRAM_CHAT_ID`; required separately when alerts use a group |
 | `TELEGRAM_ERROR_REMINDER_HOURS` | Interval before an unresolved alert is repeated | `12` |
 | `TELEGRAM_COMMANDS_ENABLED` | Enables `/status`, `/accounts`, `/check`, `/logs` | `false` |
 | `TELEGRAM_ADMIN_USER_ID` | Additional command restriction for group chats | Empty; portal OTP requires a private chat |
-| `PORTAL_SECRET` | Secret used to hash one-time codes | Required, at least 32 characters |
+| `PORTAL_SECRET` | Random secret used to hash one-time codes | Required, at least 32 characters; no example value is accepted |
 | `SESSION_COOKIE_SECURE` | Send session cookie only over HTTPS | `true` |
 | `DATABASE_PATH` | SQLite file path | `./data/app.sqlite` |
 | `PROFILE_ROOT` | Chromium profile directory | `./data/profiles` |
@@ -24,4 +25,4 @@ Docker Compose overrides the database, profile, and screenshot paths with `/data
 
 ## Telegram commands
 
-Commands are optional and accepted only from the configured chat. `/check account-001` queues a Usage check; it never directly sends `HI`. The scheduler still applies normal reset and idempotency rules. Portal OTP always requires the private chat ID configured in `TELEGRAM_CHAT_ID`.
+Commands are optional and accepted only from the configured alert chat. `/check account-001` queues a Usage check; it never directly sends `HI`. The scheduler still applies normal reset and idempotency rules. Portal OTP always requires the private chat ID configured in `TELEGRAM_OTP_CHAT_ID`. For group commands, set `TELEGRAM_ADMIN_USER_ID` to the administrator's numeric user ID.

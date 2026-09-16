@@ -10,7 +10,7 @@ The database, `.env`, and Chromium profiles are sensitive. A profile can contain
 
 Portal passwords are salted scrypt hashes. Telegram codes are random, hashed with `PORTAL_SECRET`, expire after five minutes, and are limited to five attempts. Sending is throttled. Portal session tokens are random and stored only as hashes in SQLite; the browser receives an `HttpOnly`, `SameSite=Strict` cookie. Mutating API calls require a CSRF token. Changing the password invalidates sessions.
 
-Telegram commands are restricted to the configured chat. None can force `HI` or bypass the scheduler's reset-cycle check.
+Telegram commands are restricted to the configured alert chat, and group commands require a configured administrator user ID. Login codes go only to the configured private OTP chat. None can force `HI` or bypass the scheduler's reset-cycle check.
 
 ## Reporting a vulnerability
 

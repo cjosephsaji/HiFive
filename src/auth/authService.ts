@@ -10,9 +10,11 @@ const SESSION_MS=12*60*60_000;
 export class AuthService {
   constructor(private readonly db:AppDatabase,private readonly telegram:TelegramService,
     private readonly secret:string,private readonly chatId:string) {
-    if(secret.length<32)throw new Error("PORTAL_SECRET must be at least 32 characters");
+    if(secret.length<32 || secret==="replace-with-64-random-hex-characters")
+      throw new Error("PORTAL_SECRET must be a random secret of at least 32 characters");
     if(!telegram.enabled || !/^[1-9]\d*$/.test(chatId))
-      throw new Error("Portal OTP requires Telegram enabled with a private TELEGRAM_CHAT_ID");
+      throw new Error("Portal OTP requires Telegram enabled with a private TELEGRAM_OTP_CHAT_ID");
+    this.db.raw.prepare("UPDATE portal_users SET telegram_chat_id=? WHERE telegram_chat_id<>?").run(chatId,chatId);
   }
   async createFirstAdmin(username:string,password:string):Promise<void> {
     if(!/^[a-zA-Z0-9_.-]{3,40}$/.test(username)||password.length<16||password.length>256)
@@ -65,7 +67,7 @@ export class AuthService {
         .run(id,user!.id,this.codeHash(id,code),now.toISOString(),new Date(now.getTime()+5*60_000).toISOString());
     })();
     try {
-      await this.telegram.sendTo(user!.telegram_chat_id,`Portal login code: ${code}\nExpires in 5 minutes. If you did not request this, change your portal password.`);
+      await this.telegram.sendTo(this.chatId,`Portal login code: ${code}\nExpires in 5 minutes. If you did not request this, change your portal password.`);
       this.db.raw.prepare("INSERT INTO portal_otp_sends(user_id,sent_at) VALUES(?,?)").run(user!.id,new Date().toISOString());
     }
     catch {this.db.raw.prepare("DELETE FROM portal_challenges WHERE id=?").run(id);return null;}

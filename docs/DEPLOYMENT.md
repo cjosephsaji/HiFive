@@ -5,7 +5,7 @@ HiFive runs as one Docker Compose service on a Linux server. The container inclu
 ## Prerequisites
 
 - A Linux server with Docker Engine and the Compose plugin
-- A private Telegram chat with your bot, and its numeric chat ID
+- A private Telegram chat with your bot for login codes, and optionally a group for alerts
 - Enough disk space for a separate Chromium profile for each account
 - SSH access for the noVNC tunnel
 
@@ -16,7 +16,7 @@ cp .env.example .env
 openssl rand -hex 32
 ```
 
-Put the generated value in `PORTAL_SECRET` in `.env`. Set `TELEGRAM_BOT_TOKEN` and your **private** `TELEGRAM_CHAT_ID`. Keep `.env` out of Git. Set `SESSION_COOKIE_SECURE=true` when the portal is served over HTTPS. For a localhost SSH tunnel only, set it to `false`.
+Put the generated value in `PORTAL_SECRET` in `.env`. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` for alerts, and your **private** `TELEGRAM_OTP_CHAT_ID` for login codes. Keep `.env` out of Git. Set `SESSION_COOKIE_SECURE=true` when the portal is served over HTTPS. For a localhost SSH tunnel only, set it to `false`.
 
 ```bash
 docker compose up -d --build
